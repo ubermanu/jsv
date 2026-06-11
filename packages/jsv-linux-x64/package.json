@@ -1,0 +1,11 @@
+{
+  "name": "@ubermanu/jsv-linux-x64",
+  "version": "0.1.0",
+  "description": "Linux x64 binary for @ubermanu/jsv",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "license": "MIT",
+  "files": [
+    "bin"
+  ]
+}

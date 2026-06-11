@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            pkg: jsv-linux-x64
+            binary: jsv
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            pkg: jsv-linux-arm64
+            binary: jsv
+            cross: true
+          - target: x86_64-apple-darwin
+            os: macos-13
+            pkg: jsv-darwin-x64
+            binary: jsv
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            pkg: jsv-darwin-arm64
+            binary: jsv
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            pkg: jsv-win32-x64
+            binary: jsv.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cross
+        if: ${{ matrix.cross }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+      - name: Build (cross)
+        if: ${{ matrix.cross }}
+        run: cross build --release --target ${{ matrix.target }}
+      - name: Build
+        if: ${{ !matrix.cross }}
+        run: cargo build --release --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.pkg }}
+          path: target/${{ matrix.target }}/release/${{ matrix.binary }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          for pkg in packages/jsv packages/jsv-linux-x64 packages/jsv-linux-arm64 packages/jsv-darwin-x64 packages/jsv-darwin-arm64 packages/jsv-win32-x64; do
+            jq --arg v "$VERSION" '.version = $v' $pkg/package.json > tmp.json && mv tmp.json $pkg/package.json
+          done
+          jq --arg v "$VERSION" '.optionalDependencies |= with_entries(.value = $v)' packages/jsv/package.json > tmp.json && mv tmp.json packages/jsv/package.json
+      - name: Stage binaries
+        run: |
+          for pkg in jsv-linux-x64 jsv-linux-arm64 jsv-darwin-x64 jsv-darwin-arm64; do
+            mkdir -p packages/$pkg/bin
+            cp artifacts/$pkg/jsv packages/$pkg/bin/jsv
+            chmod +x packages/$pkg/bin/jsv
+          done
+          mkdir -p packages/jsv-win32-x64/bin
+          cp artifacts/jsv-win32-x64/jsv.exe packages/jsv-win32-x64/bin/jsv.exe
+      - name: Publish platform packages
+        run: |
+          for pkg in jsv-linux-x64 jsv-linux-arm64 jsv-darwin-x64 jsv-darwin-arm64 jsv-win32-x64; do
+            npm publish packages/$pkg --access public --provenance
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish main package
+        run: npm publish packages/jsv --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

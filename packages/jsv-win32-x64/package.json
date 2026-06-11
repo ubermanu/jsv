@@ -1,0 +1,11 @@
+{
+  "name": "@ubermanu/jsv-win32-x64",
+  "version": "0.1.0",
+  "description": "Windows x64 binary for @ubermanu/jsv",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "license": "MIT",
+  "files": [
+    "bin"
+  ]
+}
