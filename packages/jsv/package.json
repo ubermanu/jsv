@@ -2,5 +2,18 @@
   "name": "@ubermanu/jsv",
   "version": "0.1.0",
   "description": "Validate JSON files against their $schema automatically",
-  "license": "MIT"
+  "license": "MIT",
+  "bin": {
+    "jsv": "./bin.js"
+  },
+  "files": [
+    "bin.js"
+  ],
+  "optionalDependencies": {
+    "@ubermanu/jsv-linux-x64": "0.1.0",
+    "@ubermanu/jsv-linux-arm64": "0.1.0",
+    "@ubermanu/jsv-darwin-x64": "0.1.0",
+    "@ubermanu/jsv-darwin-arm64": "0.1.0",
+    "@ubermanu/jsv-win32-x64": "0.1.0"
+  }
 }

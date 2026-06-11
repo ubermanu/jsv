@@ -1,0 +1,11 @@
+{
+  "name": "@ubermanu/jsv-darwin-arm64",
+  "version": "0.1.0",
+  "description": "macOS arm64 binary for @ubermanu/jsv",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "license": "MIT",
+  "files": [
+    "bin"
+  ]
+}
