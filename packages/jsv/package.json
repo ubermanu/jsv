@@ -1,0 +1,6 @@
+{
+  "name": "@ubermanu/jsv",
+  "version": "0.1.0",
+  "description": "Validate JSON files against their $schema automatically",
+  "license": "MIT"
+}
