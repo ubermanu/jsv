@@ -15,5 +15,9 @@
     "@ubermanu/jsv-darwin-x64": "0.1.0",
     "@ubermanu/jsv-darwin-arm64": "0.1.0",
     "@ubermanu/jsv-win32-x64": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ubermanu/jsv.git"
   }
 }
