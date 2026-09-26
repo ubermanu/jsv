@@ -29,5 +29,11 @@ try {
   process.exit(1)
 }
 
-const { status } = spawnSync(binary, process.argv.slice(2), { stdio: 'inherit' })
+const { status, error } = spawnSync(binary, process.argv.slice(2), { stdio: 'inherit' })
+
+if (error) {
+  process.stderr.write(`jsv: ${error.message}\n`)
+  process.exit(1)
+}
+
 process.exit(status ?? 1)

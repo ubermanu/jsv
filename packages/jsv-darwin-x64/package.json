@@ -15,5 +15,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ubermanu/jsv.git"
+  },
+  "bin": {
+    "jsv-darwin-x64": "bin/jsv"
   }
 }
