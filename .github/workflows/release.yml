@@ -70,6 +70,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+      - run: npm install -g npm@latest
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -94,9 +95,5 @@ jobs:
           for pkg in jsv-linux-x64 jsv-linux-arm64 jsv-darwin-x64 jsv-darwin-arm64 jsv-win32-x64; do
             npm publish packages/$pkg --access public --provenance
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish main package
         run: npm publish packages/jsv --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
