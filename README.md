@@ -8,6 +8,12 @@ Validate JSON files against the schema named in their own `$schema` field. No sc
 npm install -g @ubermanu/jsv
 ```
 
+With Nix:
+
+```sh
+nix profile install github:ubermanu/jsv
+```
+
 Or from source:
 
 ```sh
