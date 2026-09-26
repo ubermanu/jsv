@@ -75,11 +75,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Set version from tag
+      - name: Check version matches tag
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           for manifest in packages/*/package.json; do
-            jq --arg v "$VERSION" '.version = $v' $manifest > tmp.json && mv tmp.json $manifest
+            test "$(jq -r .version $manifest)" = "$VERSION" || { echo "$manifest is not $VERSION"; exit 1; }
           done
       - name: Stage binaries
         run: |

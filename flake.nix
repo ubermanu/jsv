@@ -14,7 +14,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         jsv = pkgs.rustPlatform.buildRustPackage {
           pname = "jsv";
-          version = "0.1.0";
+          version = (pkgs.lib.importTOML ./crates/jsv/Cargo.toml).package.version;
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
         };
