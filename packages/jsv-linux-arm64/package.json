@@ -1,6 +1,6 @@
 {
   "name": "@ubermanu/jsv-linux-arm64",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Linux arm64 binary for @ubermanu/jsv",
   "os": [
     "linux"
