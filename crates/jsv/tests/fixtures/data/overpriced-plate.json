@@ -1,0 +1,1 @@
+{ "$schema": "../schema/armor.json", "name": "Plate", "ac": 6, "cost": { "gp": "lots" } }
