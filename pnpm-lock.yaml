@@ -1,0 +1,21 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/jsv: {}
+
+  packages/jsv-darwin-arm64: {}
+
+  packages/jsv-darwin-x64: {}
+
+  packages/jsv-linux-arm64: {}
+
+  packages/jsv-linux-x64: {}
+
+  packages/jsv-win32-x64: {}
