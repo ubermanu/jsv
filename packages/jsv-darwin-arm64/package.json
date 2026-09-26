@@ -1,6 +1,6 @@
 {
   "name": "@ubermanu/jsv-darwin-arm64",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "macOS arm64 binary for @ubermanu/jsv",
   "os": [
     "darwin"
