@@ -1,5 +1,5 @@
 {
   "name": "jsv-workspace",
   "private": true,
-  "packageManager": "pnpm@latest"
+  "packageManager": "pnpm@12.6.0"
 }

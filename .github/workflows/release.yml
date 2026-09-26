@@ -66,21 +66,20 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install -g npm@latest
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Set version from tag
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          for pkg in packages/jsv packages/jsv-linux-x64 packages/jsv-linux-arm64 packages/jsv-darwin-x64 packages/jsv-darwin-arm64 packages/jsv-win32-x64; do
-            jq --arg v "$VERSION" '.version = $v' $pkg/package.json > tmp.json && mv tmp.json $pkg/package.json
+          for manifest in packages/*/package.json; do
+            jq --arg v "$VERSION" '.version = $v' $manifest > tmp.json && mv tmp.json $manifest
           done
-          jq --arg v "$VERSION" '.optionalDependencies |= with_entries(.value = $v)' packages/jsv/package.json > tmp.json && mv tmp.json packages/jsv/package.json
       - name: Stage binaries
         run: |
           for pkg in jsv-linux-x64 jsv-linux-arm64 jsv-darwin-x64 jsv-darwin-arm64; do
@@ -90,10 +89,5 @@ jobs:
           done
           mkdir -p packages/jsv-win32-x64/bin
           cp artifacts/jsv-win32-x64/jsv.exe packages/jsv-win32-x64/bin/jsv.exe
-      - name: Publish platform packages
-        run: |
-          for pkg in jsv-linux-x64 jsv-linux-arm64 jsv-darwin-x64 jsv-darwin-arm64 jsv-win32-x64; do
-            npm publish packages/$pkg --access public --provenance
-          done
-      - name: Publish main package
-        run: npm publish packages/jsv --access public --provenance
+      - name: Publish
+        run: pnpm -r publish --access public --provenance --no-git-checks

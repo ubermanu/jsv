@@ -10,11 +10,11 @@
     "bin.js"
   ],
   "optionalDependencies": {
-    "@ubermanu/jsv-linux-x64": "0.1.0",
-    "@ubermanu/jsv-linux-arm64": "0.1.0",
-    "@ubermanu/jsv-darwin-x64": "0.1.0",
-    "@ubermanu/jsv-darwin-arm64": "0.1.0",
-    "@ubermanu/jsv-win32-x64": "0.1.0"
+    "@ubermanu/jsv-linux-x64": "workspace:*",
+    "@ubermanu/jsv-linux-arm64": "workspace:*",
+    "@ubermanu/jsv-darwin-x64": "workspace:*",
+    "@ubermanu/jsv-darwin-arm64": "workspace:*",
+    "@ubermanu/jsv-win32-x64": "workspace:*"
   },
   "repository": {
     "type": "git",
