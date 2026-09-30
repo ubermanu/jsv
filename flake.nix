@@ -12,23 +12,19 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        jsv = pkgs.rustPlatform.buildRustPackage {
+        jsv = pkgs.stdenv.mkDerivation {
           pname = "jsv";
-          version = (pkgs.lib.importTOML ./crates/jsv/Cargo.toml).package.version;
+          version = (builtins.fromJSON (builtins.readFile ./packages/jsv/package.json)).version;
           src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
+          nativeBuildInputs = [ pkgs.zig_0_16 ];
         };
       in
       {
         packages.default = jsv;
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ jsv ];
           packages = [
-            pkgs.cargo
-            pkgs.rustc
-            pkgs.rustfmt
-            pkgs.clippy
+            pkgs.zig_0_16
             pkgs.nodejs
             pkgs.pnpm
           ];

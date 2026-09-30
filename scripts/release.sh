@@ -15,8 +15,7 @@ for manifest in packages/*/package.json; do
   jq --arg v "$version" '.version = $v' "$manifest" > "$manifest.tmp"
   mv "$manifest.tmp" "$manifest"
 done
-sed -i "0,/^version = .*/s//version = \"$version\"/" crates/jsv/Cargo.toml
-cargo update --workspace --quiet
+sed -i "s/^    .version = \".*\",/    .version = \"$version\",/" build.zig.zon
 
 git commit -am "Release v$version"
 git tag "v$version"
