@@ -6,15 +6,16 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const strip = b.option(bool, "strip", "Strip debug info from the binary");
 
-    const pcre2 = b.dependency("pcre2", .{ .target = target, .optimize = optimize, .linkage = .static });
-    const pcre2_h = b.addTranslateC(.{
-        .root_source_file = pcre2.namedLazyPath("pcre2.h"),
-        .target = target,
-        .optimize = optimize,
+    const quickjs = b.dependency("quickjs", .{});
+    const libregexp = b.addLibrary(.{
+        .name = "regexp",
+        .root_module = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true }),
     });
-    pcre2_h.defineCMacro("PCRE2_CODE_UNIT_WIDTH", "8");
-    pcre2_h.defineCMacro("PCRE2_STATIC", null);
-    const regex: Regex = .{ .library = pcre2.artifact("pcre2-8"), .header = pcre2_h.createModule() };
+    libregexp.root_module.addCSourceFiles(.{
+        .root = quickjs.path(""),
+        .files = &.{ "libregexp.c", "libunicode.c" },
+        .flags = &.{"-fno-sanitize=undefined"},
+    });
 
     const build_options = b.addOptions();
     build_options.addOption([]const u8, "version", version);
@@ -29,7 +30,7 @@ pub fn build(b: *std.Build) void {
             .imports = &.{.{ .name = "build_options", .module = build_options.createModule() }},
         }),
     });
-    regex.addTo(exe.root_module);
+    exe.root_module.linkLibrary(libregexp);
     b.installArtifact(exe);
 
     const run = b.addRunArtifact(exe);
@@ -53,7 +54,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&b.addRunArtifact(cli_tests).step);
 
     const schema = b.createModule(.{ .root_source_file = b.path("src/schema.zig") });
-    regex.addTo(schema);
+    schema.linkLibrary(libregexp);
     const suite = b.addExecutable(.{
         .name = "suite",
         .root_module = b.createModule(.{
@@ -67,13 +68,3 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| run_suite.addArgs(args);
     b.step("suite", "Run the JSON-Schema-Test-Suite (zig build suite -- <path>)").dependOn(&run_suite.step);
 }
-
-const Regex = struct {
-    library: *std.Build.Step.Compile,
-    header: *std.Build.Module,
-
-    fn addTo(regex: Regex, module: *std.Build.Module) void {
-        module.addImport("pcre2", regex.header);
-        module.linkLibrary(regex.library);
-    }
-};

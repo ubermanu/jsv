@@ -4,9 +4,9 @@
     .fingerprint = 0x77569d807e1aa87,
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
-        .pcre2 = .{
-            .url = "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.gz",
-            .hash = "pcre2-10.49.0-IZ6r68cregBKN199ndY6AaKNyKJpNmnQVSm8-h0gp4sj",
+        .quickjs = .{
+            .url = "https://github.com/quickjs-ng/quickjs/archive/refs/tags/v0.17.0.tar.gz",
+            .hash = "N-V-__8AAHXdRAAredjqGKa2uZcnUUzmDSajEa9AQDETVRYW",
         },
     },
     .paths = .{
