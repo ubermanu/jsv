@@ -12,23 +12,33 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        jsv = pkgs.rustPlatform.buildRustPackage {
+        quickjs = pkgs.fetchFromGitHub {
+          owner = "quickjs-ng";
+          repo = "quickjs";
+          rev = "v0.17.0";
+          hash = "sha256-TmKpLIrGeTSYk77hfuIQtxT/k9cxUo30bICqFumgDrY=";
+        };
+        # Laid out under the hash zig expects, see build.zig.zon.
+        zigDeps = pkgs.linkFarm "jsv-zig-deps" {
+          "N-V-__8AAHXdRAAredjqGKa2uZcnUUzmDSajEa9AQDETVRYW" = quickjs;
+        };
+        jsv = pkgs.stdenv.mkDerivation {
           pname = "jsv";
-          version = (pkgs.lib.importTOML ./crates/jsv/Cargo.toml).package.version;
+          version = (builtins.fromJSON (builtins.readFile ./packages/jsv/package.json)).version;
           src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
+          nativeBuildInputs = [ pkgs.zig_0_16 ];
+          zigBuildFlags = [
+            "--system"
+            "${zigDeps}"
+          ];
         };
       in
       {
         packages.default = jsv;
 
         devShells.default = pkgs.mkShell {
-          inputsFrom = [ jsv ];
           packages = [
-            pkgs.cargo
-            pkgs.rustc
-            pkgs.rustfmt
-            pkgs.clippy
+            pkgs.zig_0_16
             pkgs.nodejs
             pkgs.pnpm
           ];

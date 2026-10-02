@@ -14,10 +14,10 @@ With Nix:
 nix profile install github:ubermanu/jsv
 ```
 
-Or from source:
+Or from source, with Zig 0.16:
 
 ```sh
-cargo install --git https://github.com/ubermanu/jsv jsv
+zig build -Doptimize=ReleaseSafe --prefix ~/.local
 ```
 
 ## Usage
