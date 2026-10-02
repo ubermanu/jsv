@@ -132,6 +132,12 @@ pub const Registry = struct {
         return .{ .arena = arena, .retriever = retriever };
     }
 
+    /// Frees the compiled regular expressions; everything else lives in `arena`.
+    pub fn deinit(self: *Registry) void {
+        var it = self.regexes.valueIterator();
+        while (it.next()) |re| re.deinit();
+    }
+
     fn fail(self: *Registry, comptime format: []const u8, args: anytype) Error {
         self.message = std.fmt.allocPrint(self.arena, format, args) catch return error.OutOfMemory;
         return error.SchemaError;
@@ -275,16 +281,20 @@ pub const Registry = struct {
     fn regex(self: *Registry, pattern: []const u8) Error!*const Regex {
         const entry = try self.regexes.getOrPut(self.arena, pattern);
         if (!entry.found_existing) {
-            entry.value_ptr.* = Regex.compile(self.arena, pattern) catch |err| {
+            entry.value_ptr.* = Regex.compile(pattern) catch |err| {
                 _ = self.regexes.remove(pattern);
                 return switch (err) {
                     error.OutOfMemory => error.OutOfMemory,
                     error.InvalidPattern => self.fail("invalid regular expression: {s}", .{pattern}),
-                    error.UnsupportedPattern => self.fail("unsupported regular expression: {s}", .{pattern}),
                 };
             };
         }
         return entry.value_ptr;
+    }
+
+    fn search(self: *Registry, pattern: []const u8, input: []const u8) Error!bool {
+        const re = try self.regex(pattern);
+        return re.search(input) catch self.fail("regular expression {s} failed on {s}", .{ pattern, input });
     }
 
     fn resolvePending(self: *Registry) Error!void {
@@ -620,8 +630,7 @@ const Keywords = struct {
                 if (try k.report("{s} is longer than {d} character{s}", .{ try v.json(instance), max, plural(max) })) return true;
             };
             if (k.get("pattern")) |pattern| if (pattern.* == .string) {
-                const re = try v.registry.regex(pattern.string);
-                if (!try re.search(v.arena, instance.string)) {
+                if (!try v.registry.search(pattern.string, instance.string)) {
                     if (try k.report("{s} does not match {s}", .{ try v.json(instance), try v.json(pattern.*) })) return true;
                 }
             };
@@ -728,8 +737,7 @@ const Keywords = struct {
                 if (!try v.checkChild(sub, k.resource, value, .{ .key = key }, k.collect) and k.failed()) return true;
             };
             if (patterns) |pats| for (pats.keys(), pats.values()) |pattern, *sub| {
-                const re = try v.registry.regex(pattern);
-                if (!try re.search(v.arena, key)) continue;
+                if (!try v.registry.search(pattern, key)) continue;
                 matched = true;
                 k.local.set(i);
                 if (!try v.checkChild(sub, k.resource, value, .{ .key = key }, k.collect) and k.failed()) return true;
@@ -991,6 +999,7 @@ fn expectFailures(schema: []const u8, instance: []const u8, expected: []const []
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var registry = Registry.init(arena, .{ .context = undefined, .retrieveFn = NoRetriever.retrieve });
+    defer registry.deinit();
     var message: []const u8 = "";
     try registry.add("urn:test", try parse(arena, schema, &message), .draft2020_12);
     const location = try registry.compile("urn:test", .draft2020_12);
@@ -1044,6 +1053,7 @@ test "unresolvable references fail at compile time" {
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var registry = Registry.init(arena, .{ .context = undefined, .retrieveFn = NoRetriever.retrieve });
+    defer registry.deinit();
     var message: []const u8 = "";
     try registry.add("urn:test", try parse(arena, "{ \"$ref\": \"#/$defs/missing\" }", &message), .draft2020_12);
     try std.testing.expectError(error.SchemaError, registry.compile("urn:test", .draft2020_12));
@@ -1055,6 +1065,7 @@ test "a failed compile does not affect the next schema" {
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var registry = Registry.init(arena, .{ .context = undefined, .retrieveFn = NoRetriever.retrieve });
+    defer registry.deinit();
     var message: []const u8 = "";
     try registry.add("urn:broken", try parse(arena, "{ \"allOf\": [{ \"$ref\": \"#/a\" }, { \"$ref\": \"#/b\" }] }", &message), .draft2020_12);
     try registry.add("urn:fine", try parse(arena, "{ \"type\": \"object\" }", &message), .draft2020_12);

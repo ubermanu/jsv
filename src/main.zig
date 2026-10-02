@@ -159,6 +159,7 @@ pub fn main(init: std.process.Init) !void {
     var fetcher: Fetcher = .{ .io = io, .client = .{ .io = io, .gpa = init.gpa, .environ = init.environ_map } };
     defer fetcher.client.deinit();
     var registry = schema.Registry.init(arena, .{ .context = &fetcher, .retrieveFn = Fetcher.retrieve });
+    defer registry.deinit();
     var all_valid = true;
 
     for (args) |path| {

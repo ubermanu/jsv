@@ -2,7 +2,6 @@
 
 const std = @import("std");
 const Regex = @import("regex.zig");
-const unicode = @import("unicode.zig");
 
 /// Returns whether `value` matches `format`, or null for an unknown format.
 /// `rfc1123` selects the draft 4 and 6 hostname rules.
@@ -22,7 +21,7 @@ pub fn check(arena: std.mem.Allocator, format: []const u8, value: []const u8, rf
         .@"iri-reference" => isUri(value, .{ .absolute = false, .unicode = true }),
         .@"json-pointer" => isJsonPointer(value),
         .@"relative-json-pointer" => isRelativeJsonPointer(value),
-        .regex => isRegex(arena, value),
+        .regex => isRegex(value),
         .@"uri-template" => isUriTemplate(value),
     };
 }
@@ -150,28 +149,22 @@ fn decodePunycode(arena: std.mem.Allocator, input: []const u8) ![]const u21 {
     return output.items;
 }
 
-fn generalCategory(c: u21) []const u8 {
-    inline for (unicode.categories) |entry| {
-        const ranges = entry[1];
-        var lo: usize = 0;
-        var hi: usize = ranges.len;
-        while (lo < hi) {
-            const mid = (lo + hi) / 2;
-            if (c < ranges[mid][0]) {
-                hi = mid;
-            } else if (c > ranges[mid][1]) {
-                lo = mid + 1;
-            } else return entry[0];
-        }
-    }
-    return "Cn";
+/// Matches the single code point `c` against `class`, a PCRE2 character class.
+fn inClass(class: *const Regex, c: u21) bool {
+    var buffer: [4]u8 = undefined;
+    const len = std.unicode.utf8Encode(c, &buffer) catch return false;
+    return class.search(buffer[0..len]) catch false;
 }
 
 const virama = [_]u21{ 0x094D, 0x09CD, 0x0A4D, 0x0ACD, 0x0B4D, 0x0BCD, 0x0C4D, 0x0CCD, 0x0D4D, 0x0DCA, 0x0E3A, 0x0F84, 0x1039, 0x1714, 0x1734, 0x17D2, 0x1A60, 0x1B44, 0x1BAA, 0x1BF2, 0x1BF3, 0x2D7F, 0xA806, 0xA8C4, 0xA953, 0xABED, 0x10A3F, 0x11046, 0x1107F, 0x110B9, 0x11133, 0x111C0, 0x11235, 0x112EA, 0x1134D, 0x11442, 0x114C2, 0x115BF, 0x1163F, 0x116B6, 0x1172B, 0x11839, 0x119E0, 0x11A34, 0x11A47, 0x11A99, 0x11C3F, 0x11D44, 0x11D45, 0x11D97 };
 
 /// Applies the RFC 5892 rules to a decoded label.
 fn isIdnaLabel(label: []const u21) bool {
-    if (label.len > 0 and generalCategory(label[0])[0] == 'M') return false;
+    var mark = Regex.compile("^\\p{M}$") catch return false;
+    defer mark.deinit();
+    var pvalid = Regex.compile("^[\\p{Lu}\\p{Ll}\\p{Lt}\\p{Lm}\\p{Lo}\\p{Mn}\\p{Mc}\\p{Nd}]$") catch return false;
+    defer pvalid.deinit();
+    if (label.len > 0 and inClass(&mark, label[0])) return false;
     var katakana_middle_dot = false;
     var hiragana_katakana_han = false;
     var arabic_indic = false;
@@ -190,13 +183,7 @@ fn isIdnaLabel(label: []const u21) bool {
             0x06F0...0x06F9 => extended_arabic_indic = true,
             0x0640, 0x07FA, 0x302E, 0x302F, 0x3031...0x3035, 0x303B => return false,
             0x200C, 0x06FD, 0x06FE, 0x0F0B, 0x3007 => {},
-            else => if (c >= 0x80) {
-                const category = generalCategory(c);
-                const pvalid = [_][]const u8{ "Lu", "Ll", "Lt", "Lm", "Lo", "Mn", "Mc", "Nd" };
-                for (pvalid) |p| {
-                    if (std.mem.eql(u8, p, category)) break;
-                } else return false;
-            },
+            else => if (c >= 0x80 and !inClass(&pvalid, c)) return false,
         }
     }
     return !(katakana_middle_dot and !hiragana_katakana_han) and !(arabic_indic and extended_arabic_indic);
@@ -357,8 +344,8 @@ fn isRelativeJsonPointer(s: []const u8) bool {
     return std.mem.eql(u8, rest, "#") or isJsonPointer(rest);
 }
 
-fn isRegex(arena: std.mem.Allocator, s: []const u8) bool {
-    var re = Regex.compile(arena, s) catch |err| return err != error.InvalidPattern;
+fn isRegex(s: []const u8) bool {
+    var re = Regex.compile(s) catch |err| return err != error.InvalidPattern;
     re.deinit();
     return true;
 }

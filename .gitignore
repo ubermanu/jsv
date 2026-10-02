@@ -2,3 +2,4 @@
 zig-out
 node_modules
 result
+zig-pkg
